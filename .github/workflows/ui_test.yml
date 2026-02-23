@@ -48,28 +48,42 @@ jobs:
 
       - name: Import database schema/data
         run: |
-          # GANTI path SQL sesuai repo kamu
           mysql -h 127.0.0.1 -P 3306 -uroot -proot damncrud < db/damncrud.sql
 
       - name: Start PHP server
-        env:
-          # Kalau aplikasi kamu bisa baca ENV untuk koneksi DB, set di sini.
-          DB_HOST: 127.0.0.1
-          DB_USER: root
-          DB_PASS: root
-          DB_NAME: damncrud
         run: |
           php -S 127.0.0.1:8000 -t . >/tmp/phpserver.log 2>&1 &
           sleep 2
 
+      # ✅ Penting: install dependency Linux untuk menjalankan Chrome headless
+      - name: Install Chrome dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libxss1 \
+            libasound2t64 \
+            fonts-liberation \
+            libgbm1 \
+            libgtk-3-0 \
+            xvfb
+
+      # ✅ Install Chrome
       - name: Setup Google Chrome
         uses: browser-actions/setup-chrome@v1
 
+      # ✅ Install ChromeDriver yang match versi Chrome
+      - name: Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+
+      # ✅ Jalankan test pakai DISPLAY virtual (xvfb), tanpa ubah test file
       - name: Run tests in parallel (xdist)
         env:
           BASE_URL: http://127.0.0.1:8000
           APP_USERNAME: admin
           APP_PASSWORD: nimda666!
-          HEADLESS: "1"
+          # test kamu HEADLESS=False hardcode, jadi kita pakai xvfb
+          DISPLAY: ":99"
         run: |
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
           python -m pytest -q -n 4
