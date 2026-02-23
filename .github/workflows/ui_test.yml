@@ -50,17 +50,27 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root --protocol=TCP < db/damncrud.sql
 
       # ── 4. PHP built-in web server (serves app at localhost:8080) ──────────
-      - name: Start PHP built-in server
+      - name: Start PHP server
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root
+          DB_NAME: damncrud
         run: |
           php -S localhost:8080 -t . > /tmp/php_server.log 2>&1 &
-          echo "PHP_SERVER_PID=$!" >> $GITHUB_ENV
-          # Wait until the server is ready
-          for i in {1..15}; do
-            curl -sf http://localhost:8080/login.php > /dev/null && echo "Server ready." && break
-            echo "Waiting for server... ($i)"
-            sleep 2
+          sleep 2
+
+      - name: Wait for PHP server to be ready
+        run: |
+          for i in $(seq 1 20); do
+            if curl -s http://localhost:8080 | grep -q "<html"; then
+              echo "Server ready."
+              break
+            else
+              echo "Waiting for server... $i"
+              sleep 1
+            fi
           done
-          curl -f http://localhost:8080/login.php > /dev/null  (cat /tmp/php_server.log && exit 1)
 
       # ── 5. Python runtime ───────────────────────────────────────────────────
       - name: Set up Python 3.11
@@ -76,14 +86,28 @@ jobs:
       - name: Set up Google Chrome
         uses: browser-actions/setup-chrome@v1
 
-      # ── 7. Run all 5 test cases in parallel (5 workers) ────────────────────
-      - name: Run tests in parallel with pytest-xdist
+      - name: Install ChromeDriver
         run: |
-          pytest test_damncrud.py \
-            -n 5 \
-            -v \
-            --tb=short \
-            --junit-xml=test-results.xml
+          sudo apt-get update
+          sudo apt-get install -y chromium-chromedriver
+          sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver || true
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+          export DISPLAY=:99
+
+      # ── 7. Run all 5 test cases in parallel (5 workers) ────────────────────
+      - name: Run tests in parallel (xdist)
+        env:
+          BASE_URL: http://localhost:8080
+          APP_USERNAME: admin
+          APP_PASSWORD: nimda666!
+          HEADLESS: "1"
+          DISPLAY: ":99"
+          CHROME_BIN: "/usr/bin/google-chrome"
+        run: |
+          python -m pytest -q -n 4 || cat /tmp/php_server.log
 
       # ── 8. Publish results & artifacts ─────────────────────────────────────
       - name: Upload JUnit test results
