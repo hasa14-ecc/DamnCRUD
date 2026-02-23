@@ -72,4 +72,4 @@ jobs:
           APP_PASSWORD: nimda666!
           HEADLESS: "1"
         run: |
-          python -m pytest -q -n 4
+          python tests/test_damncrud.py
