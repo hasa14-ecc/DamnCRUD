@@ -85,5 +85,5 @@ jobs:
           # test kamu HEADLESS=False hardcode, jadi kita pakai xvfb
           DISPLAY: ":99"
         run: |
-          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
-          python -m pytest -q -n 4
+           Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+           python -m pytest -q -n 4 tests/test_runner_pytest.py
