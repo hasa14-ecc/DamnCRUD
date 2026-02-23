@@ -7,6 +7,7 @@ if (!isset($_SESSION['user'])) {
     $pdo = pdo_connect();
 
     if (!empty($_POST)) {
+        $id = null;
         $name = $_POST['name'];
         $email = $_POST['email'];
         $phone = $_POST['phone'];

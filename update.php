@@ -7,9 +7,8 @@ if (isset($_GET['id'])) {
     if (!empty($_POST)) {
         $name = $_POST['name'];
         $email = $_POST['email'];
-        $phone = $_POST['phone'];
+        $phone = $_POST['phone'] ? $_POST['phone'] : $contact['phone'];
         $title = $_POST['title'];
-        // Insert new record into the contacts table
         $stmt = $pdo->prepare('UPDATE contacts SET name = ?, email = ?, phone = ?, title = ? WHERE id = ?');
         $stmt->execute([$name, $email, $phone, $title, $_GET['id']]);
         header("location:index.php");
